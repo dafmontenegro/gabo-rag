@@ -5,13 +5,16 @@
 
 - [1. Tools and Technologies](#1-tools-and-technologies)
 - [2. How to run Ollama in Google Colab?](#2-how-to-run-ollama-in-google-colab)
-  - [2.1 Ollama installation](#21-ollama-installation)
+  - [2.1 Ollama Installation](#21-ollama-installation)
   - [2.2 Run 'ollama serve'](#22-run-ollama-serve)
   - [2.3 Run 'ollama pull \<model\_name\>'](#23-run-ollama-pull-model_name)
 - [3. Exploring LLMs](#3-exploring-llms)
 - [4. Data Extraction and Preparation](#4-data-extraction-and-preparation)
   - [4.1 Web Scraping and Chunking](#41-web-scraping-and-chunking)
-  - [4.2 Embedding Model](#42-embedding-model)
+  - [4.2 Embedding Model: Nomic](#42-embedding-model-nomic)
+- [5. Storing in the Vector Database](#5-storing-in-the-vector-database)
+  - [5.1 Making Chroma Persistent](#51-making-chroma-persistent)
+  - [5.2 Adding Documents to Chroma](#52-adding-documents-to-chroma)
 - [References](#references)
 
 ## Author
@@ -28,7 +31,7 @@
 
 ## 2. How to run Ollama in Google Colab?
 
-### 2.1 Ollama installation
+### 2.1 Ollama Installation
 For this, we simply go to the [Ollama downloads page](https://ollama.com/download/linux) and select **Linux**. The command is as follows
 
 ```bash
@@ -167,7 +170,7 @@ There are indeed many ways to perform chunking, several of which are discussed i
 
 ---
 
-### 4.2 Embedding Model
+### 4.2 Embedding Model: Nomic
 I ran several tests with different **embedding models**, including **LLama 3.1** and **Phi 3.5**, but it wasn't until I used `nomic-embed-text` that I saw significantly better results. So, this is the embedding model we'll use.
 
 ```bash
@@ -182,9 +185,66 @@ from langchain_ollama import OllamaEmbeddings
 nomic_ollama_embeddings = OllamaEmbeddings(model="nomic-embed-text")
 ```
 
+## 5. Storing in the Vector Database
+**Chroma** is our chosen vector database. With the help of our embedding model provided by **Nomic**, we will store all the fragments generated from the texts, so that later we can query them and make them part of our context for each query to the **LLMs**.
+
+### 5.1 Making Chroma Persistent
+Here we have to think **one step ahead in time**, so we assume that chroma is already persistent, which means that it **exists in a directory**. If we don't do this, what will happen every time we run this **Python Notebook**, is that we will add repeated strings over and over again to the vector database. So it is a good practice to **reset Chroma** and in case it does not exist, it will be created and **simply remain empty**. [4]
+
+```bash
+!pip install -qU chromadb langchain-chroma
+```
+
+We will create a function that will be specifically in charge of resetting the collection.
+
+```python
+from langchain_chroma import Chroma
+
+def reset_collection(collection_name, persist_directory):
+    Chroma(collection_name=collection_name, embedding_function=nomic_ollama_embeddings, persist_directory=persist_directory).delete_collection()
+
+reset_collection("gabo_rag", "chroma")
+```
+
+---
+
+### 5.2 Adding Documents to Chroma
+We may think that it is enough to just pass it all the text and it will store it completely, but that approach is inefficient and contradictory to the idea of RAG; that is why a whole section was dedicated to Chunking before.
+
+```python
+count = 0
+
+for gabo_url in gabo_urls:
+    texts = ciudad_seva_loader(gabo_url)
+    Chroma.from_texts(texts=texts, collection_name="gabo_rag", embedding=nomic_ollama_embeddings, persist_directory="chroma")
+    count += len(texts)
+
+count
+```
+
+```text
+OUTPUT: 5908
+```
+
+Let's verify that all fragments were saved correctly in Chroma
+
+```python
+vector_store = Chroma(collection_name="gabo_rag", embedding_function=nomic_ollama_embeddings, persist_directory="chroma")
+
+len(vector_store.get()["ids"])
+```
+
+```text
+OUTPUT: 5908
+```
+
+> Here we are accessing the persistent data, not the in-memory data.
+
 ## References
 [1] **Ollama. (s. f.). ollama/docs/tutorials/langchainpy.md at main · ollama/ollama. GitHub.** https://github.com/ollama/ollama/blob/main/docs/tutorials/langchainpy.md
 
 [2] **FullStackRetrieval-Com. (s. f.). RetrievalTutorials/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb at main · FullStackRetrieval-com/RetrievalTutorials. GitHub.** https://github.com/FullStackRetrieval-com/RetrievalTutorials/blob/main/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb
 
-[3] How to split text based on semantic similarity | 🦜️🔗 LangChain. (s. f.). https://python.langchain.com/docs/how_to/semantic-chunker/
+[3] **How to split text based on semantic similarity | 🦜️🔗 LangChain. (s. f.).** https://python.langchain.com/docs/how_to/semantic-chunker/
+
+[4] **Chroma — 🦜🔗 LangChain  documentation. (s. f.).** https://python.langchain.com/v0.2/api_reference/chroma/vectorstores/langchain_chroma.vectorstores.Chroma.html
