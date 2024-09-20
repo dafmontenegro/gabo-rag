@@ -11,6 +11,7 @@
 - [3. Exploring LLMs](#3-exploring-llms)
 - [4. Data Extraction and Preparation](#4-data-extraction-and-preparation)
   - [4.1 Web Scraping and Chunking](#41-web-scraping-and-chunking)
+  - [4.2 Embedding Model](#42-embedding-model)
 - [References](#references)
 
 ## Author
@@ -163,6 +164,23 @@ def ciudad_seva_loader(url):
 There are indeed many ways to perform chunking, several of which are discussed in **"5 Levels of Text Splitting"** [2]. The most interesting idea for me about how to split texts, and what I believe fits best in this project, is **Semantic Splitting**. So, following that idea, we will ensure that the function divides all the texts by their periods, thus generating **semantic fragments in Spanish**.
 
 > Tests were performed on the **Semantic Similarity** [3] offered by **Langchain**, but the results were worse. In this case, there is no need to do something extremely sophisticated, when the simplest and practically obvious solution is the best.
+
+---
+
+### 4.2 Embedding Model
+I ran several tests with different **embedding models**, including **LLama 3.1** and **Phi 3.5**, but it wasn't until I used `nomic-embed-text` that I saw significantly better results. So, this is the embedding model we'll use.
+
+```bash
+!ollama pull nomic-embed-text
+```
+
+We're going to create our model so we can later use it in **Chroma**, our vector database.
+
+```python
+from langchain_ollama import OllamaEmbeddings
+
+nomic_ollama_embeddings = OllamaEmbeddings(model="nomic-embed-text")
+```
 
 ## References
 [1] **Ollama. (s. f.). ollama/docs/tutorials/langchainpy.md at main · ollama/ollama. GitHub.** https://github.com/ollama/ollama/blob/main/docs/tutorials/langchainpy.md
