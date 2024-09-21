@@ -16,7 +16,8 @@
     - [5.1 Making Chroma Persistent](#51-making-chroma-persistent)
     - [5.2 Adding Documents to Chroma](#52-adding-documents-to-chroma)
 - [6. Use a Vectorstore as a Retriever](#6-use-a-vectorstore-as-a-retriever)
-- [References](#references)
+- [7. RAG (Retrieval-Augmented Generation)](#7-rag-retrieval-augmented-generation)
+- [8. References](#8-references)
 
 ## Author
 
@@ -271,7 +272,70 @@ By default `Chroma.as_retriever()` will search for the most similar documents an
 
 > We can see that the document returned to us was the **exact excerpt** that gives the **appropriate context** of our query. So the built retriever is **working correctly.**
 
-## References
+## 7. RAG (Retrieval-Augmented Generation)
+To better integrate our context to the query, we will make use of a **template** that will help us set up the behavior of the **RAG** and give it indications on how to answer.
+
+```python
+from langchain_core.prompts import PromptTemplate
+
+template = """
+Eres 'Gabo', un asistente especializado en la obra de Gabriel García Márquez. Fuiste creado en conmemoracion del decimo aniversario de su muerte.
+Responde de manera concisa, precisa y relevante a la pregunta que se te ha hecho, sin desviarte del tema y limitando tu respuesta a un parrafo.
+Cada consulta que recibas puede estar acompañada de un contexto que corresponde a fragmentos de cuentos, opiniones y otros textos del escritor.
+
+Contexto: {context}
+
+Pregunta: {input}
+
+Respuesta:
+"""
+
+custom_rag_prompt = PromptTemplate.from_template(template)
+```
+
+**LangChain** tells us how to use `create_stuff_documents_chain()` to integrate **Phi 3.5** and our **custom prompt**. Then we just need to use `create_retrieval_chain()` to automatically pass to the **LLM** our input along with the context and fill it in the template. [5]
+
+```python
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains import create_retrieval_chain
+
+question_answer_chain = create_stuff_documents_chain(llm_phi, custom_rag_prompt)
+rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+```
+
+Now let's test with our first control question, which allows us to check if the **LLM** is aware of his or her **new identity.**
+
+```python
+response = rag_chain.invoke({"input": "Hablame de quien eres"})
+
+print(f"\nANSWER: {response['answer']}\nCONTEXT: {response['context'][0].page_content}")
+```
+
+```text
+OUTPUT:
+
+ANSWER: Gabo es mi nombre, un asistente diseñado para proporcionar información sobre el ilustre escritor colombiano Gabriel García Márquez y su extensa obra literaria. Mis respuestas están informadas por textos como los fragmentos del cuento "En este pueblo no hay ladrones", donde la simplicidad cotidiana refleja las profundidades que el maestro de Macondo exploró en sus narrativas ricas y complejas.
+
+CONTEXT: Fragmento 457/714 de 'En este pueblo no hay ladrones [Cuento - Texto completo.] Gabriel García Márquez': 'Comieron sin hablar'
+```
+
+Finally let's conclude with the question that **started all this**....
+
+```python
+response = rag_chain.invoke({"input": test_message})
+
+print(f"\nANSWER: {response['answer']}\nCONTEXT: {response['context'][0].page_content}")
+```
+
+```text
+OUTPUT:
+
+ANSWER: La señora vieja del cuento 'Algo muy grave va a suceder en este pueblo' posee dos hijos. Uno de los cuales tiene 17 años y la otra, una niña, es de 14 años. Está representando el estilo realista mágico característico que García Márquez utiliza para tejer personajes complejos dentro del tejido familiar densamente poblado en su narrativa.
+
+CONTEXT: Fragmento 2/40 de 'Algo muy grave va a suceder en este pueblo [Cuento - Texto completo.] Gabriel García Márquez': 'Imagínese usted un pueblo muy pequeño donde hay una señora vieja que tiene dos hijos, uno de 17 y una hija de 14'
+```
+
+## 8. References
 [1] **Ollama. (s. f.). ollama/docs/tutorials/langchainpy.md at main · ollama/ollama. GitHub.** https://github.com/ollama/ollama/blob/main/docs/tutorials/langchainpy.md
 
 [2] **FullStackRetrieval-Com. (s. f.). RetrievalTutorials/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb at main · FullStackRetrieval-com/RetrievalTutorials. GitHub.** https://github.com/FullStackRetrieval-com/RetrievalTutorials/blob/main/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb
