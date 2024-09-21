@@ -1,20 +1,20 @@
-# Gabo RAG Tutorial
+# Gabo RAG
 **'Gabo'** is a **RAG (Retrieval-Augmented Generation)** system designed to enhance the capabilities of **LLMs (Large Language Models)** such as **'Llama 3.1'** or **'Phi 3.5**'. This project honors Colombian author **Gabriel García Márquez** by marking the tenth anniversary of his death, creating a specialized assistant to answer questions about his work, and using new technologies to further reveal his literary legacy.
 
 [**Python Notebook**](https://github.com/dafmontenegro/gabo-rag/blob/master/gabo_rag.ipynb) | [**Repository**](https://github.com/dafmontenegro/gabo-rag)
 
 - [1. Tools and Technologies](#1-tools-and-technologies)
 - [2. How to run Ollama in Google Colab?](#2-how-to-run-ollama-in-google-colab)
-	- [2.1 Ollama Installation](#21-ollama-installation)
-	- [2.2 Run 'ollama serve'](#22-run-ollama-serve)
-	- [2.3 Run 'ollama pull \<model\_name\>'](#23-run-ollama-pull-model_name)
+    - [2.1 Ollama Installation](#21-ollama-installation)
+    - [2.2 Run 'ollama serve'](#22-run-ollama-serve)
+    - [2.3 Run 'ollama pull \<model\_name\>'](#23-run-ollama-pull-model_name)
 - [3. Exploring LLMs](#3-exploring-llms)
 - [4. Data Extraction and Preparation](#4-data-extraction-and-preparation)
-	- [4.1 Web Scraping and Chunking](#41-web-scraping-and-chunking)
-	- [4.2 Embedding Model: Nomic](#42-embedding-model-nomic)
+    - [4.1 Web Scraping and Chunking](#41-web-scraping-and-chunking)
+    - [4.2 Embedding Model: Nomic](#42-embedding-model-nomic)
 - [5. Storing in the Vector Database](#5-storing-in-the-vector-database)
-	- [5.1 Making Chroma Persistent](#51-making-chroma-persistent)
-	- [5.2 Adding Documents to Chroma](#52-adding-documents-to-chroma)
+    - [5.1 Making Chroma Persistent](#51-making-chroma-persistent)
+    - [5.2 Adding Documents to Chroma](#52-adding-documents-to-chroma)
 - [6. Use a Vectorstore as a Retriever](#6-use-a-vectorstore-as-a-retriever)
 - [References](#references)
 
