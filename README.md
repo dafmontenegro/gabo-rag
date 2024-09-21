@@ -1,20 +1,21 @@
 # Gabo RAG Tutorial
 **'Gabo'** is a **RAG (Retrieval-Augmented Generation)** system designed to enhance the capabilities of **LLMs (Large Language Models)** such as **'Llama 3.1'** or **'Phi 3.5**'. This project honors Colombian author **Gabriel García Márquez** by marking the tenth anniversary of his death, creating a specialized assistant to answer questions about his work, and using new technologies to further reveal his literary legacy.
 
-[**Repository**](https://github.com/dafmontenegro/gabo-rag) | [**Python Notebook**](https://github.com/dafmontenegro/gabo-rag/blob/master/gabo_rag.ipynb)
+[**Python Notebook**](https://github.com/dafmontenegro/gabo-rag/blob/master/gabo_rag.ipynb) | [**Repository**](https://github.com/dafmontenegro/gabo-rag)
 
 - [1. Tools and Technologies](#1-tools-and-technologies)
 - [2. How to run Ollama in Google Colab?](#2-how-to-run-ollama-in-google-colab)
-  - [2.1 Ollama Installation](#21-ollama-installation)
-  - [2.2 Run 'ollama serve'](#22-run-ollama-serve)
-  - [2.3 Run 'ollama pull \<model\_name\>'](#23-run-ollama-pull-model_name)
+	- [2.1 Ollama Installation](#21-ollama-installation)
+	- [2.2 Run 'ollama serve'](#22-run-ollama-serve)
+	- [2.3 Run 'ollama pull \<model\_name\>'](#23-run-ollama-pull-model_name)
 - [3. Exploring LLMs](#3-exploring-llms)
 - [4. Data Extraction and Preparation](#4-data-extraction-and-preparation)
-  - [4.1 Web Scraping and Chunking](#41-web-scraping-and-chunking)
-  - [4.2 Embedding Model: Nomic](#42-embedding-model-nomic)
+	- [4.1 Web Scraping and Chunking](#41-web-scraping-and-chunking)
+	- [4.2 Embedding Model: Nomic](#42-embedding-model-nomic)
 - [5. Storing in the Vector Database](#5-storing-in-the-vector-database)
-  - [5.1 Making Chroma Persistent](#51-making-chroma-persistent)
-  - [5.2 Adding Documents to Chroma](#52-adding-documents-to-chroma)
+	- [5.1 Making Chroma Persistent](#51-making-chroma-persistent)
+	- [5.2 Adding Documents to Chroma](#52-adding-documents-to-chroma)
+- [6. Use a Vectorstore as a Retriever](#6-use-a-vectorstore-as-a-retriever)
 - [References](#references)
 
 ## Author
@@ -120,7 +121,13 @@ llm_phi.invoke(test_message)
 To collect the information that our **RAG** will use, we will perform **Web Scraping** of the section dedicated to [Gabriel Garcia Marquez](https://ciudadseva.com/autor/gabriel-garcia-marquez/) in the **Ciudad Seva web site**.
 
 ### 4.1 Web Scraping and Chunking
-The first step will be to save the list of sources we will extract from the website into a variable.
+The first step is to install **Beautiful Soup** so that LangChain's **WebBaseLoader** works correctly.
+
+```bash
+!pip install -qU beautifulsoup4
+```
+
+The next step will be to save the list of sources we will extract from the website into a variable.
 
 ```python
 base_urls = ["https://ciudadseva.com/autor/gabriel-garcia-marquez/cuentos/",
@@ -201,7 +208,11 @@ We will create a function that will be specifically in charge of resetting the c
 from langchain_chroma import Chroma
 
 def reset_collection(collection_name, persist_directory):
-    Chroma(collection_name=collection_name, embedding_function=nomic_ollama_embeddings, persist_directory=persist_directory).delete_collection()
+    Chroma(
+        collection_name=collection_name,
+		embedding_function=nomic_ollama_embeddings,
+		persist_directory=persist_directory
+	).delete_collection()
 
 reset_collection("gabo_rag", "chroma")
 ```
@@ -239,6 +250,35 @@ OUTPUT: 5908
 ```
 
 > Here we are accessing the persistent data, not the in-memory data.
+
+## 6. Use a Vectorstore as a Retriever
+A retriever is an **interface** that specializes in retrieving information from an **unstructured query**. Let's test the work we did, we will use the same `test_message` as before and see if the retriever can return the **specific fragment** of the text that has the answer (the one quoted in section [3. Exploring LLMs](#3-exploring-llms)).
+
+```python
+retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+
+docs = retriever.invoke(test_message)
+
+for doc in docs:
+    title, article = doc.page_content.split("': '")
+    print(f"\n{title}:\n{article}")
+```
+
+```text
+OUTPUT:
+Fragmento 2/40 de 'Algo muy grave va a suceder en este pueblo [Cuento - Texto completo.] Gabriel García Márquez
+Imagínese usted un pueblo muy pequeño donde hay una señora vieja que tiene dos hijos, uno de 17 y una hija de 14'
+
+Fragmento 4/40 de 'Algo muy grave va a suceder en este pueblo [Cuento - Texto completo.] Gabriel García Márquez
+Los hijos le preguntan qué le pasa y ella les responde: -No sé, pero he amanecido con el presentimiento de que algo muy grave va a sucederle a este pueblo'
+
+Fragmento 15/40 de 'Algo muy grave va a suceder en este pueblo [Cuento - Texto completo.] Gabriel García Márquez
+-¿Y por qué es un tonto? -Hombre, porque no pudo hacer una carambola sencillísima estorbado con la idea de que su mamá amaneció hoy con la idea de que algo muy grave va a suceder en este pueblo'
+```
+
+By default `Chroma.as_retriever()` will search for the most similar documents and `search_kwargs={”k“: 3}` indicates that we want to limit the output to **3**.
+
+> We can see that the first document returned to us was the **exact excerpt** that gives the **appropriate context** of our query (**"Fragmento 2/40 ... "**). So the built retriever is **working correctly.**
 
 ## References
 [1] **Ollama. (s. f.). ollama/docs/tutorials/langchainpy.md at main · ollama/ollama. GitHub.** https://github.com/ollama/ollama/blob/main/docs/tutorials/langchainpy.md
