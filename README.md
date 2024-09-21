@@ -137,6 +137,7 @@ def get_urls(url):
     lis = article.find_all("li", "text-center")
     return [li.find("a").get("href") for li in lis]
 ```
+
 Let's see how many texts by the writer we can gather.
 
 ```python
