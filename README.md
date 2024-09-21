@@ -24,7 +24,7 @@
 
 ## 1. Tools and Technologies
 
-- [**Ollama**](https://ollama.com/): Running models ([Llama 3.1 ](https://ollama.com/library/llama3.1)and [Phi 3.5](https://ollama.com/library/phi3.5)) and embeddings ([Nomic](https://ollama.com/library/nomic-embed-text))
+- [**Ollama**](https://ollama.com/): Running models ([Llama 3.1](https://ollama.com/library/llama3.1) or [Phi 3.5](https://ollama.com/library/phi3.5)) and embeddings ([Nomic](https://ollama.com/library/nomic-embed-text))
 - [**LangChain**](https://python.langchain.com/docs/introduction/): Framework and web scraping tool
 - [**Chroma**](https://docs.trychroma.com/): Vector database
 
@@ -58,15 +58,14 @@ time.sleep(3)
 ---
 
 ### 2.3 Run 'ollama pull <model_name>'
-For this project, we will use [Llama 3.1 ](https://ollama.com/library/llama3.1)and [Phi 3.5](https://ollama.com/library/phi3.5), so we perform the respective pulls of the models.
+For this project we will use [Phi-3.5-mini](https://ollama.com/library/phi3.5) the lightweight **Microsoft** model with high capabilities. This project is also extensible to [Llama 3.1](https://ollama.com/library/llama3.1), you would only have to pull that other model.
 
 ```bash
-!ollama pull llama3.1
 !ollama pull phi3.5
 ```
 
 ## 3. Exploring LLMs
-Now that we have our LLMs, it's time to test them with what will be our control question.
+Now that we have our LLM, it's time to test them with what will be our control question.
 
 ```python
 test_message = "¿Cuántos hijos tiene la señora vieja del cuento Algo muy grave va a suceder en este pueblo?"
@@ -93,20 +92,12 @@ Before we can invoke the LLM, we need to install LangChain. [1]
 !pip install -qU langchain_community
 ```
 
-Now we create the models.
+Now we create the model.
 
 ```python
 from langchain_community.llms import Ollama
 
-llm_llama = Ollama(model="llama3.1")
-
 llm_phi = Ollama(model="phi3.5")
-```
-
-Invoke Llama 3.1
-
-```python
-llm_llama.invoke(test_message)
 ```
 
 Invoke Phi 3.5
@@ -115,7 +106,7 @@ Invoke Phi 3.5
 llm_phi.invoke(test_message)
 ```
 
-> At this stage, none of the models are expected to be capable of answering the question correctly, and they might even hallucinate while attempting to provide a response. To address this, we will begin constructing our **RAG** in the next section.
+> At this stage, the model is not expected to be able to answer the question correctly, and they might even hallucinate when trying to give an answer. To solve this problem, we will start building our **RAG** in the next section.
 
 ## 4. Data Extraction and Preparation
 To collect the information that our **RAG** will use, we will perform **Web Scraping** of the section dedicated to [Gabriel Garcia Marquez](https://ciudadseva.com/autor/gabriel-garcia-marquez/) in the **Ciudad Seva web site**.
@@ -179,6 +170,12 @@ There are indeed many ways to perform chunking, several of which are discussed i
 
 ### 4.2 Embedding Model: Nomic
 I ran several tests with different **embedding models**, including **LLama 3.1** and **Phi 3.5**, but it wasn't until I used `nomic-embed-text` that I saw significantly better results. So, this is the embedding model we'll use.
+
+```bash
+!pip install -qU langchain-ollama
+```
+
+Now let's pull with Ollama from [Nomic's embedding model](https://ollama.com/library/nomic-embed-text)
 
 ```bash
 !ollama pull nomic-embed-text
@@ -255,30 +252,24 @@ OUTPUT: 5908
 A retriever is an **interface** that specializes in retrieving information from an **unstructured query**. Let's test the work we did, we will use the same `test_message` as before and see if the retriever can return the **specific fragment** of the text that has the answer (the one quoted in section [3. Exploring LLMs](#3-exploring-llms)).
 
 ```python
-retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+retriever = vector_store.as_retriever(search_kwargs={"k": 1})
 
 docs = retriever.invoke(test_message)
 
 for doc in docs:
     title, article = doc.page_content.split("': '")
-    print(f"\n{title}:\n{article}")
+    print(f"\n{title}':\n'{article}")
 ```
 
 ```text
 OUTPUT:
-Fragmento 2/40 de 'Algo muy grave va a suceder en este pueblo [Cuento - Texto completo.] Gabriel García Márquez
-Imagínese usted un pueblo muy pequeño donde hay una señora vieja que tiene dos hijos, uno de 17 y una hija de 14'
-
-Fragmento 4/40 de 'Algo muy grave va a suceder en este pueblo [Cuento - Texto completo.] Gabriel García Márquez
-Los hijos le preguntan qué le pasa y ella les responde: -No sé, pero he amanecido con el presentimiento de que algo muy grave va a sucederle a este pueblo'
-
-Fragmento 15/40 de 'Algo muy grave va a suceder en este pueblo [Cuento - Texto completo.] Gabriel García Márquez
--¿Y por qué es un tonto? -Hombre, porque no pudo hacer una carambola sencillísima estorbado con la idea de que su mamá amaneció hoy con la idea de que algo muy grave va a suceder en este pueblo'
+Fragmento 2/40 de 'Algo muy grave va a suceder en este pueblo [Cuento - Texto completo.] Gabriel García Márquez':
+'Imagínese usted un pueblo muy pequeño donde hay una señora vieja que tiene dos hijos, uno de 17 y una hija de 14'
 ```
 
-By default `Chroma.as_retriever()` will search for the most similar documents and `search_kwargs={”k“: 3}` indicates that we want to limit the output to **3**.
+By default `Chroma.as_retriever()` will search for the most similar documents and `search_kwargs={”k“: 1}` indicates that we want to limit the output to **1**. [4]
 
-> We can see that the first document returned to us was the **exact excerpt** that gives the **appropriate context** of our query (**"Fragmento 2/40 ... "**). So the built retriever is **working correctly.**
+> We can see that the document returned to us was the **exact excerpt** that gives the **appropriate context** of our query. So the built retriever is **working correctly.**
 
 ## References
 [1] **Ollama. (s. f.). ollama/docs/tutorials/langchainpy.md at main · ollama/ollama. GitHub.** https://github.com/ollama/ollama/blob/main/docs/tutorials/langchainpy.md
@@ -288,3 +279,5 @@ By default `Chroma.as_retriever()` will search for the most similar documents an
 [3] **How to split text based on semantic similarity | 🦜️🔗 LangChain. (s. f.).** https://python.langchain.com/docs/how_to/semantic-chunker/
 
 [4] **Chroma — 🦜🔗 LangChain  documentation. (s. f.).** https://python.langchain.com/v0.2/api_reference/chroma/vectorstores/langchain_chroma.vectorstores.Chroma.html
+
+[5] **Build a Retrieval Augmented Generation (RAG) App | 🦜️🔗 LangChain. (s. f.).** https://python.langchain.com/docs/tutorials/rag/
