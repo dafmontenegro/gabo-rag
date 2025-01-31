@@ -1,4 +1,4 @@
-# Gabo RAG | Daniel Felipe Montenegro
+# Gabo RAG
 **'Gabo'** is a **RAG (Retrieval-Augmented Generation)** system designed to enhance the capabilities of **LLMs (Large Language Models)** such as **'DeepSeek-R1'**, **'Llama 3.2'**, and **'Phi 3.5**'. This project honors Colombian author **Gabriel García Márquez** by marking the tenth anniversary of his death, creating a specialized assistant to answer questions about his work, and using new technologies to further reveal his literary legacy.
 
 [**Python Notebook**](https://github.com/dafmontenegro/gabo-rag/blob/master/gabo_rag.ipynb) | [**Webpage**](https://montenegrodanielfelipe.com/projects/gabo-rag/) | [**Repository**](https://github.com/dafmontenegro/gabo-rag)
